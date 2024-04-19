@@ -1,10 +1,21 @@
 from PyPDF2 import PdfReader, PdfWriter
 from fpdf import FPDF
+from pdf2image import convert_from_path
 from io import BytesIO
 import os
+import base64
+import fitz
+import shutil
 from fastapi.responses import StreamingResponse
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from num2words import num2words
+import pytesseract
+from PIL import Image, ImageEnhance, ImageFilter
+import cv2
+import re
+import numpy as np
+from math import sqrt
+import tempfile
 
 
 app = FastAPI()
@@ -19,6 +30,8 @@ app = FastAPI(
 
 )
 
+output_folder = "output"  # Asegúrate de que este directorio existe o crea uno dinámicamente
+
 
 def thousandSeparator(number):
     number = round(number, 3)
@@ -31,46 +44,43 @@ def thousandSeparator(number):
     return number_formatted
 
 @app.post("/invoice/")
-async def get_invoice(data: dict):
-    """Agrega el contenido a la factura"""
+async def get_invoice(file: UploadFile = File(...)):
+    # Guardar el archivo en el sistema de archivos temporal
+    with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+        shutil.copyfileobj(file.file, tmpfile)
+
+    # Obtener la ruta del archivo temporal
+    tmpfile_path = tmpfile.name
+
+    # Procesar el archivo PDF
+    data = process_pdf(tmpfile_path)
+    print('datas', data)
+    # Eliminar el archivo temporal
+    os.remove(tmpfile_path)
+
     # Crear un PDF nuevo usando FPDF
     #formato a4
-    data = {
-        "fecha": "18-02-2024",
-        "condicion": "Contado",
-        "razon_social": "JomaTech Co",
-        "ruc": "5708247-2",
-        "direccion": "Cnel Toledo c/ Gral Bruguez",
-        "telefono": "0984266644",
-        "items": [
-            {
-                "descripcion": "Producto 1",
-                "cantidad": 2,
-                "precio_unitario": 100000,
-                "total_10": 200000, #10% si no hay enviar 0 pero enviar
-                "total_5": 0,#5% si no hay enviar 0 pero enviar
-                "total_0": 0 #exentas
+    # data = {
+    #     "fecha": "18-02-2024",
+    #     "condicion": "Contado",
+    #     "razon_social": "JomaTech Co",
+    #     "ruc": "5708247-2",
+    #     "direccion": "Cnel Toledo c/ Gral Bruguez",
+    #     "telefono": "0984266644",
+    #     "items": [
+    #         {
+    #             "descripcion": "Producto 1",
+    #             "cantidad": 2,
+    #             "precio_unitario": 100000,
+    #             "total_10": 200000, #10% si no hay enviar 0 pero enviar
+    #             "total_5": 0,#5% si no hay enviar 0 pero enviar
+    #             "total_0": 0 #exentas
                 
-            },
-            {
-                "descripcion": "Producto 2",
-                "cantidad": 1,
-                "precio_unitario": 150000,
-                "total_10": 150000, #10% si no hay enviar 0 pero enviar
-                "total_5": 0,#5% si no hay enviar 0 pero enviar
-                "total_0": 0 #exentas
-            },
-            {
-                "descripcion": "Producto 2",
-                "cantidad": 1,
-                "precio_unitario": 150000,
-                "total_10": 150000, #10% si no hay enviar 0 pero enviar
-                "total_5": 0,#5% si no hay enviar 0 pero enviar
-                "total_0": 0 #exentas
-            }
-        ],
-    }
-
+    #         },
+    #     ],
+    # }
+  
+    
     _total_items = 0
     _total_iva_10 = 0
     _total_iva_5 = 0
@@ -92,7 +102,7 @@ async def get_invoice(data: dict):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     #ocupar toda la pagina
-    pdf.image("factura_template.jpg", x=1, y=1, w=210, h=295)
+    pdf.image('output/page_1.jpg', x=1, y=1, w=210, h=295)
     pdf.set_font("Arial", size=12)
     pdf.rect(11, 48, 190.2, 20) # pdf.rect(x, y, w, h)
     pdf.set_font("Arial", size=10)
@@ -228,3 +238,154 @@ async def get_invoice(data: dict):
     return StreamingResponse(
         BytesIO(pdf_bytes), media_type="application/pdf", headers=headers
     )  
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    clear_folder(output_folder)
+    # Crear una ruta temporal para guardar el archivo cargado
+    temp_file_path = f"temp/{file.filename}"  # Considera usar un directorio temporal adecuado
+    os.makedirs(os.path.dirname(temp_file_path), exist_ok=True)
+
+    # Guardar el archivo cargado temporalmente
+    with open(temp_file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Ahora que el archivo está guardado en el sistema de archivos, puedes usar su ruta
+    convert_pdf_to_images(temp_file_path, output_folder)
+    # process_images(output_folder)
+    
+
+    # Opcional: eliminar el archivo temporal después de convertirlo
+    os.remove(temp_file_path)
+
+
+    return 'Procesado con éxito'
+
+
+
+
+def convert_pdf_to_images(pdf_path, output_folder):
+
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Convertir el PDF a una lista de objetos de imagen
+    images = convert_from_path(pdf_path, dpi=600)  # Puedes ajustar el dpi según tus necesidades
+
+    # Guardar cada página como una imagen en el directorio de salida
+    for i, image in enumerate(images):
+        filename = f"{output_folder}/page_{i + 1}.jpg"
+        image.save(filename, 'JPEG')
+
+    print(f"Conversión completada. {len(images)} imágenes guardadas en {output_folder}.")
+
+
+
+def clear_folder(folder_path):
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)  # Eliminar archivos y enlaces
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # Eliminar directorios y su contenido
+        except Exception as e:
+            print(f'Error al eliminar {file_path}. Razón: {e}')
+
+
+
+def preprocess(image):
+    # Convertir a escala de grises
+    img = image.convert('L')  
+
+    # Aumentar contraste
+    enhancer = ImageEnhance.Contrast(img)
+    img = enhancer.enhance(2)
+
+    # Reducir ruido 
+    img = img.filter(ImageFilter.MedianFilter())
+    # Mejora del contraste
+    img = np.array(img)
+    img = cv2.equalizeHist(img)
+
+    # Eliminación de artefactos y manchas
+    edges = cv2.Canny(img, 30, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < 100:
+            cv2.drawContours(img, [contour], -1, (0, 0, 0), -1)
+
+    # Umbralizar
+    thresh = 200
+    img = cv2.threshold(img, thresh, 255, cv2.THRESH_BINARY)[1]
+
+    return img
+
+            
+def process_pdf(file):
+    pages = convert_from_path(file)
+    texto_completo = ''
+    data = {
+        "fecha": "",
+        "condicion": "",
+        "razon_social": "",
+        "ruc": "",
+        "direccion": "",
+        "telefono": "",
+        "items": []
+    }
+
+    for page in pages:
+        image = preprocess(page)
+        texto_pagina = pytesseract.image_to_string(image)
+        texto_completo += texto_pagina + '\n\n'
+    nombres_productos = []
+
+    cabecera_match = re.search(r"Fecha de transaccién (.*?)Contacto (.*?)NIT del Contacto (.*?)Vendedor (.*?)Método de pago (.*?)\n", texto_completo, re.DOTALL)
+    if cabecera_match:
+        fecha_transaccion = cabecera_match.group(1).strip()
+        contacto = cabecera_match.group(2).strip()
+        nit_contacto = cabecera_match.group(3).strip()
+        vendedor = cabecera_match.group(4).strip()
+        metodo_pago = cabecera_match.group(5).strip()
+
+        data["fecha"] = fecha_transaccion
+        data["condicion"] = metodo_pago
+        data["razon_social"] = contacto
+        data["ruc"] = nit_contacto
+        
+    else:
+        print("Información de la cabecera no encontrada.")
+
+    # Extraer toda la información de productos
+    productos_info_match = re.search(r"Productos Cantidad Precio unitario Valor\n([\s\S]+?)(?=\nTotal:)", texto_completo)
+
+    if productos_info_match:
+        productos_info = productos_info_match.group(1).strip().split("\n")
+        productos = []
+        for producto_info in productos_info:
+            # Asumiendo el formato: [Nombre] [Cantidad] $[Precio unitario] $[Valor]
+            # Se ajusta para manejar mejor los espacios inesperados
+            match = re.match(r"(.*?)\s+(\d+)\s*\$\s*([\d,]+)\s*\$\s*([\d,]+)", producto_info)
+            if match:
+                descripcion = match.group(1)
+                cantidad = int(match.group(2))
+                precio_unitario = int(match.group(3).replace(",", "").replace("$", ""))
+                total = int(match.group(4).replace(",", "").replace("$", ""))
+                items = {
+                    "descripcion": descripcion,
+                    "cantidad": cantidad,
+                    "precio_unitario": precio_unitario,
+                    "total_10": 0,  # 10% si no hay enviar 0 pero enviar
+                    "total_5": precio_unitario,  # 5% si no hay enviar 0 pero enviar
+                    "total_0": total  # exentas
+                }
+                productos.append(items)
+                
+        data["items"] = productos
+        print('dataaa', data)
+        # Imprimir detalles de productos
+    else:
+        print("Información de productos no encontrada.")
+    
+    return data
