@@ -54,7 +54,7 @@ async def get_invoice(file: UploadFile = File(...)):
 
     # Procesar el archivo PDF
     data = process_pdf(tmpfile_path)
-    print('datas', data)
+    # print('datas', data)
     # Eliminar el archivo temporal
     os.remove(tmpfile_path)
 
@@ -102,7 +102,7 @@ async def get_invoice(file: UploadFile = File(...)):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     #ocupar toda la pagina
-    pdf.image('output/page_1.jpg', x=1, y=1, w=210, h=295)
+    # pdf.image('output/page_1.jpg', x=1, y=1, w=210, h=295)
     pdf.set_font("Arial", size=12)
     pdf.rect(11, 48, 190.2, 20) # pdf.rect(x, y, w, h)
     pdf.set_font("Arial", size=10)
@@ -112,7 +112,7 @@ async def get_invoice(file: UploadFile = File(...)):
     pdf.cell(70, 88, txt="   Razón Social: JomaTech Co", ln=0, align="L")
     pdf.cell(70, 88, txt="   RUC: 5708247-2", ln=0, align="L")
     pdf.ln(4)
-    pdf.cell(100, 91, txt="   Dirección: Cnel Toledo c/ Gral Bruguez", ln=0, align="L")
+    pdf.cell(70, 91, txt="   Dirección: Cnel Toledo c/ Gral Bruguez", ln=0, align="L")
     pdf.cell(70, 91, txt="   Teléfono: 0984266644", ln=0, align="L")
     pdf.ln(6)
 
@@ -178,7 +178,7 @@ async def get_invoice(file: UploadFile = File(...)):
     pdf.text(90, 192, txt="   RUC: 5708247-2")
     pdf.ln(4)
     pdf.text(12, 198, txt="   Dirección: Cnel Toledo c/ Gral Bruguez")
-    pdf.text(110, 198, txt="   Teléfono: 0984266644")
+    pdf.text(90, 198, txt="   Teléfono: 0984266644")
     pdf.ln(6)
 
     #lineas horizontales 
@@ -376,9 +376,9 @@ def process_pdf(file):
                     "descripcion": descripcion,
                     "cantidad": cantidad,
                     "precio_unitario": precio_unitario,
-                    "total_10": 0,  # 10% si no hay enviar 0 pero enviar
-                    "total_5": precio_unitario,  # 5% si no hay enviar 0 pero enviar
-                    "total_0": total  # exentas
+                    "total_10": precio_unitario,  # 10% si no hay enviar 0 pero enviar
+                    "total_5": 0,  # 5% si no hay enviar 0 pero enviar
+                    "total_0": 0  # exentas
                 }
                 productos.append(items)
                 
