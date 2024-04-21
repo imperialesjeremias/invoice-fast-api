@@ -389,3 +389,84 @@ def process_pdf(file):
         print("Información de productos no encontrada.")
     
     return data
+
+def case_two(file):
+    pages = convert_from_path(file)
+    texto_completo = ''
+    data = {
+        "fecha": "",
+        "condicion": "",
+        "razon_social": "",
+        "ruc": "",
+        "direccion": "",
+        "telefono": "",
+        "items": [],
+    }
+
+    for page in pages:
+        image = preprocess(page)
+        texto_pagina = pytesseract.image_to_string(image)
+        texto_completo += texto_pagina
+        print(texto_completo)
+
+    # # buscar fecha
+    fecha = re.search(r"(\d{1,2}\s(?:|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4}\s-\s(\d{1,2}:\d{2}))", texto_completo)
+    data["fecha"] = fecha.group(1)
+
+    # # condicion
+    metodo_pago = re.search(r"(Efectivo|Transferencia Bancaria)", texto_completo)
+    data["condicion"] = metodo_pago.group(1)
+
+    # # razon social y ruc
+    razon_and_ruc = re.search(r"(\d{8}-\d{1})\n*(.*)", texto_completo)
+    data["razon_social"] = razon_and_ruc.group(2)
+    data["ruc"] = razon_and_ruc.group(1)
+
+    productos_y_precios = re.search(r"Productos\n([\s\S]+?)(?=\nTotal:)[\s\S]*?(?:Precio unitario|Precio)\s[\w]*\n((?:[$?\d]*\s)*[$?\d]*)\s\n?([$?\d]+)", texto_completo)
+    items = {"Productos": "", "Precio": ""}
+    items["Productos"] = productos_y_precios.group(1)
+    items["Precio"] = productos_y_precios.group(2)
+   
+    if productos_y_precios:
+        productos = productos_y_precios.group(1).strip().split("\n")
+        for producto in productos:
+            if producto == "":
+                productos.remove(producto)
+            else:
+                continue
+        
+        precios = productos_y_precios.group(2).strip().split("\n")
+        for precio in precios:
+            if precio == "":
+                precios.remove(precio)
+            else:
+                continue
+
+        productos_descripcion_y_precio = []
+        for i in range(len(productos)):
+            productos_descripcion_y_precio.append(productos[i] + " " + precios[i])
+        
+    
+    if productos_descripcion_y_precio:
+        productos = []
+        for producto_info in productos_descripcion_y_precio:
+            # Asumiendo el formato: [Nombre] [Cantidad] en este caso no hay $[Precio unitario] $[Valor]
+            # Match directo a los valores esperados
+            match = re.match(r"(.*?)([\w\s\/]*)\s*\$\s*([\d,]+)\s\$\s*([\d,]+)", producto_info)
+            if match:
+                descripcion = match.group(2)
+                # cantidad = int(match.group(2))
+                precio_unitario = int(match.group(3).replace(",", "").replace("$", ""))
+                # total = int(match.group(4).replace(",", "").replace("$", ""))
+                items = {
+                    "descripcion": descripcion,
+                    "cantidad": 0,
+                    "precio_unitario": precio_unitario,
+                    "total_10": precio_unitario,  # 10% si no hay enviar 0 pero enviar
+                    "total_5": 0,  # 5% si no hay enviar 0 pero enviar
+                    "total_0": 0  # exentas
+                }
+                productos.append(items)
+                
+        data["items"] = productos
+    return data
