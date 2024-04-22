@@ -18,6 +18,10 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
+# Instalar Poppler, Python3, pip y dependencias necesarias
+RUN apt-get update && \
+    apt-get install -y poppler-utils tesseract-ocr python3 python3-pip python3-venv && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN pip install numpy opencv-python
 
