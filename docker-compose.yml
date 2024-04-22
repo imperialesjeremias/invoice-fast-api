@@ -1,9 +1,15 @@
-version: '3.8'
-
+version: "3"
 services:
-  invoice-pdf:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DOCKER_BUILD_OPTS: "--squash --squash --squash"
+    image: invoice-aratiri
+    container_name: invoice-aratiri
+    volumes:
+      - .:/app
     ports:
-      - "8000:8000"
+      - "4200:4200"
+    command: uvicorn main:app --host 0.0.0.0 --port 4200 --reload
