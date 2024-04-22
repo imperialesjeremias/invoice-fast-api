@@ -1,0 +1,16 @@
+name: FastAPI Docker Image CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build Docker image
+      run: docker build -t invoice-aratiri .
+    - name: docker-compose up
+      run: docker-compose up -d
+    
