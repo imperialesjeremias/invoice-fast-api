@@ -382,7 +382,6 @@ def process_pdf(file):
                 productos.append(items)
                 
         data["items"] = productos
-        # print('dataaa', data)
         # Imprimir detalles de productos
     else:
         print("Información de productos no encontrada.")
