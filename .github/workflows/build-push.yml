@@ -16,8 +16,8 @@ jobs:
     - name: SSH into vps update project
       uses: appleboy/ssh-action@master
       with:
-        host: '64.23.229.251'
-        username: 'root'
+        host: 64.23.229.251
+        username: root
         key: ${{ secrets.SSH_KEY }}
         script: |
           cd /var/www/invoice-aratiri
