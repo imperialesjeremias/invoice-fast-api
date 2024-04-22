@@ -4,7 +4,6 @@ from pdf2image import convert_from_path
 from io import BytesIO
 import os
 import base64
-import fitz
 import shutil
 from fastapi.responses import StreamingResponse
 from fastapi import FastAPI, UploadFile, File
@@ -12,9 +11,7 @@ from num2words import num2words
 import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import cv2
-import re
 import numpy as np
-from math import sqrt
 import tempfile
 
 
