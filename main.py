@@ -147,7 +147,8 @@ async def get_invoice(file: UploadFile = File(...)):
     y_position = 96
     pdf.ln(4)
     for item in data["items"]:
-        pdf.text(20, 78.2+count, txt=f"   {item['cantidad']}")
+        cantidad = item['cantidad'] if item['cantidad'] > 0 else '1'
+        pdf.text(20, 78.2+count, txt=f"   {cantidad}")
         pdf.text(30, 78.2+count, txt=f"   {item['descripcion']}")
         pdf.text(97, 78.2+count, txt=f"   {thousandSeparator(item['precio_unitario'])}")
         pdf.text(110, 78.2+count, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
