@@ -19,7 +19,6 @@ jobs:
         host: ${{secrets.HOST}}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSHKEY }}
-        passphrase: ${{ secrets.PASSPHRASE }}
         script: |
           cd /var/www/invoice-aratiri
           git pull
