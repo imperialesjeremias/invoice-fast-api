@@ -15,6 +15,14 @@ jobs:
       run: docker-compose up -d
     - name: Print SSH key
       run: echo "${{ secrets.SSHKEY }}"
+    - name: Configure SSH
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSHKEY }}
+      run: |
+        mkdir -p ~/.ssh/
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -t rsa 64.23.229.251 >> ~/.ssh/known_hosts
     - name: SSH into vps update project
       uses: appleboy/ssh-action@master
       with:
@@ -26,4 +34,3 @@ jobs:
           git pull
           docker-compose down
           docker-compose up -d
-    
