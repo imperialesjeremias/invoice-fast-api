@@ -43,7 +43,7 @@ app = FastAPI(
     title="Invoice Arartiri", 
     openapi_url="/api/v1/openapi.json",  
     version="1.0.0", 
-    description="API para la Aratiri",
+    description="API para Aratiri",
     docs_url="/docs",
     redoc_url="/redoc"
 
@@ -93,138 +93,89 @@ async def get_invoice(file: UploadFile = File(...)):
     _total_general = _total_iva_10 + _total_iva_5 + _total_exentas
 
 
-    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf = FPDF(orientation='P', unit='mm', format='Legal')
     pdf.add_page()
     #ocupar toda la pagina
-    # pdf.image('output/page_1.jpg', x=1, y=1, w=210, h=295)
+    # pdf.image('output/page_1.jpg', x=1, y=1, w=216, h=356)
     pdf.set_font("Arial", size=12)
-    pdf.rect(11, 48, 190.2, 20) # pdf.rect(x, y, w, h)
-    pdf.set_font("Arial", size=10)
-    pdf.cell(70, 85, txt=f" Fecha: {data['fecha']}", ln=0, align="L")
-    pdf.cell(70, 85, txt="   Condición: Contado   X  Crédito", ln=0, align="L")
-    pdf.ln(4)
-    pdf.cell(70, 88, txt=f"   Razón Social: {data['razon_social']}", ln=0, align="L")
-    pdf.cell(70, 88, txt=f"   RUC: {data['ruc']}", ln=0, align="L")
-    pdf.ln(4)
-    pdf.cell(70, 91, txt="   Dirección: -", ln=0, align="L")
-    pdf.cell(70, 91, txt="   Teléfono: -", ln=0, align="L")
-    pdf.ln(6)
+    pos_y_range = 0
+    for i in range(0, 2):
+        pdf.rect(11, 55 + pos_y_range, 196, 21) # pdf.rect(x, y, w, h)
+        pdf.set_font("Arial", size=10)
+        pdf.text(12, 60 + pos_y_range, txt=f"FECHA DE EMISIÓN: {data['fecha']}")
+        pdf.text(90, 60 + pos_y_range, txt="CONDICIÓN DE VENTA: CONTADO   (X)  Crédito ( )  DÍAS: ....")
+        pdf.ln(4)
+        pdf.text(12, 65 + pos_y_range, txt=f"NOMBRE O RAZÓN SOCIAL: {data['razon_social']}")
+        pdf.text(150, 65 + pos_y_range, txt=f"RUC: {data['ruc']}")
+        pdf.ln(4)
+        pdf.text(12, 70 + pos_y_range, txt="DIRECCIÓN: -")
+        pdf.text(150, 70 + pos_y_range, txt="EMAIL: -")
+        pdf.ln(4)
+        pdf.text(12, 75 + pos_y_range, txt="NOTA DE REMISIÓN NRO: -")
+        pdf.text(150, 75 + pos_y_range, txt="TELÉFONO: -")
 
-    #lineas horizontales 
-    pdf.line(11, 75, 201.2, 75)
-    pdf.line(110, 72.2, 201.2, 72.2)
-    pdf.line(11, 113, 201.2, 113)
-    pdf.line(11, 117, 201.2, 117)
-    pdf.line(11, 122, 165, 122)
+        #lineas horizontales 
+        pdf.line(11, 61.5 + pos_y_range, 207, 61.5 + pos_y_range)
+        pdf.line(11, 66.5 + pos_y_range, 207, 66.5 + pos_y_range)
+        pdf.line(11, 71.5 + pos_y_range, 207, 71.5 + pos_y_range)
 
-    
-    #lineas verticales
-    pdf.line(30, 69, 30, 113)
-    pdf.line(85, 69, 85, 113)
-    pdf.line(110, 69, 110, 117)
-    pdf.line(140, 72.5, 140, 117)
-    pdf.line(170, 72.5, 170, 117)
-    pdf.line(165, 117, 165, 126)
 
-    pdf.cell(30, 94, txt="   Cantidad", ln=0, align="L")
-    pdf.cell(45, 94, txt="   Descripción", ln=0, align="L")
-    pdf.cell(30, 94, txt="   Precio Unit.", ln=0, align="L")
-    pdf.set_font("Arial", size=8)
-    pdf.cell(80, 92.5, txt="   Valor de Venta", ln=0, align="C")
-    pdf.ln(2)
-    pdf.set_font("Arial", size=8)
-    pdf.cell(120, 95, txt="Exentas", ln=0, align="R")
-    pdf.cell(45, 95, txt="   5%", ln=0, align="C")
-    pdf.cell(30, 95, txt="   10%", ln=0, align="L")
-    pdf.rect(11, 69, 190.2, 57)
-    count = 0
-    y_position = 96
-    pdf.ln(4)
-    for item in data["items"]:
-        cantidad = item['cantidad'] if item['cantidad'] > 0 else '1'
-        pdf.text(20, 78.2+count, txt=f"   {cantidad}")
-        pdf.text(30, 78.2+count, txt=f"   {item['descripcion']}")
-        pdf.text(97, 78.2+count, txt=f"   {thousandSeparator(item['precio_unitario'])}")
-        pdf.text(110, 78.2+count, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
-        pdf.text(140, 78.2+count, txt=f"   {item['total_5'] if item['total_5'] > 0 else ''}")
-        pdf.text(187, 78.2+count, txt=f"   {thousandSeparator(item['total_10']) if item['total_10'] > 0 else ''}")
-        count += 4 
-        y_position += 3 
-    pdf.ln(12)
-    pdf.cell(100, 147, txt="   SUBTOTALES", ln=0, align="L")
-    pdf.cell(30, 147, txt=f"{thousandSeparator(_total_exentas) if _total_exentas > 0 else ''}", ln=0, align="R")
-    pdf.cell(30, 147, txt=f"{thousandSeparator(_total_iva_5) if _total_iva_5 > 0 else ''}", ln=0, align="R")
-    pdf.cell(31, 147, txt=f"{thousandSeparator(_total_iva_10) if _total_iva_10 > 0 else ''}", ln=0, align="R")
-    pdf.ln(4)
-    pdf.cell(150, 149, txt=f"   TOTAL A PAGAR Gs: {num2words(_total_general, lang='es')}", ln=0, align="L")
-    pdf.set_font("Arial", size=12)
-    pdf.cell(60, 151, txt=f"{thousandSeparator(_total_general)}", ln=0, align="C")
-    pdf.ln(2)
-    pdf.set_font("Arial", size=8)
-    pdf.cell(120, 152, txt=f"   LIQUIDACION DEL IVA (10%): {thousandSeparator(_iva_10)}                           (5%): {thousandSeparator(_iva_5)}                     TOTAL IVA: {thousandSeparator(_total_iva)}" , ln=0, align="L")
-    pdf.ln(4)
-    ## segunda factura 
-    pdf.rect(11, 180, 190.2, 20)
-    pdf.set_font("Arial", size=10)
-    pdf.text(12, 185,  txt=f" Fecha: {data['fecha']}")
-    pdf.text(90, 185, txt="   Condición: Contado   X  Crédito")
-    pdf.ln(4)
-    pdf.text(12, 192, txt=f"   Razón Social: {data['razon_social']}")
-    pdf.text(90, 192, txt=f"   RUC: {data['ruc']}")
-    pdf.ln(4)
-    pdf.text(12, 198, txt="   Dirección: -")
-    pdf.text(90, 198, txt="   Teléfono: -")
-    pdf.ln(6)
+        pdf.line(11, 82 + pos_y_range, 207, 82 + pos_y_range)
+        pdf.line(125, 79 + pos_y_range, 207, 79 + pos_y_range)
 
-    #lineas horizontales 
-    pdf.line(11, 75+132, 201.2, 75+132)
-    pdf.line(110, 72.2+132, 201.2, 72.2+132)
-    pdf.line(11, 113+132, 201.2, 113+132)
-    pdf.line(11, 117+132, 201.2, 117+132)
-    pdf.line(11, 122+132, 165, 122+132)
-    pdf.rect(11, 201, 190.2, 57)
-    #lineas verticales
-    pdf.line(30, 69+132, 30, 113+132)
-    pdf.line(85, 69+132, 85, 113+132)
-    pdf.line(110, 69+132, 110, 117+132)
-    pdf.line(140, 72.5+132, 140, 117+132)
-    pdf.line(170, 72.5+132, 170, 117+132)
-    pdf.line(165, 117+132, 165, 126+132)
+        pdf.line(11, 138.5 + pos_y_range, 207, 138.5 + pos_y_range)
+        pdf.line(11, 143 + pos_y_range, 207, 143 + pos_y_range)
+        pdf.line(11, 147 + pos_y_range, 179, 147 + pos_y_range)
 
-    pdf.text(12, 94+111.5, txt="   Cantidad")
-    pdf.text(40, 94+111.5, txt="   Descripción")
-    pdf.text(88, 94+111.5, txt="   Precio Unit.")
-    pdf.set_font("Arial", size=8)
-    pdf.text(140, 92+111.5, txt="   Valor de Venta")
-    pdf.ln(2)
-    pdf.set_font("Arial", size=8)
-    pdf.text(120, 95+111.5, txt="Exentas")
-    pdf.text(145, 95+111.5, txt="   5%")
-    pdf.text(180, 95+111.5, txt="   10%")
-    count = 0
-    y_position = 96
-    pdf.ln(4)
-    for item in data["items"]:
-        pdf.text(20, 98+111.5+count, txt=f"   {item['cantidad']}")
-        pdf.text(30, 98+111.5+count, txt=f"   {item['descripcion']}")
-        pdf.text(97, 98+111.5+count, txt=f"   {thousandSeparator(item['precio_unitario'])}")
-        pdf.text(110, 98+111.5+count, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
-        pdf.text(140, 98+111.5+count, txt=f"   {item['total_5'] if item['total_5'] > 0 else ''}")
-        pdf.text(187, 98+111.5+count, txt=f"   {thousandSeparator(item['total_10']) if item['total_10'] > 0 else ''}")
-        count += 4 
-        y_position += 3  
-    pdf.text(12, 137+111.5, txt="   SUBTOTALES")
-    pdf.text(110, 137+111.5, txt=f"{thousandSeparator(_total_exentas) if _total_exentas > 0 else ''}")
-    pdf.text(140, 137+111.5, txt=f"{thousandSeparator(_total_iva_5) if _total_iva_5 > 0 else ''}")
-    pdf.text(189, 137+111.5, txt=f"{thousandSeparator(_total_iva_10) if _total_iva_10 > 0 else ''}")
-    pdf.ln(4)
-    pdf.text(12, 141+111.5, txt=f"   TOTAL A PAGAR Gs: {num2words(_total_general, lang='es')}")
-    pdf.set_font("Arial", size=12)
-    pdf.text(180, 143+111.5, txt=f"{thousandSeparator(_total_general)}")
-    pdf.ln(2)
-    pdf.set_font("Arial", size=8)
-    pdf.text(12, 146+111.5, txt=f"   LIQUIDACION DEL IVA (10%): {thousandSeparator(_iva_10)}                           (5%): {thousandSeparator(_iva_5)}                     TOTAL IVA: {thousandSeparator(_total_iva)}")
-    pdf.ln(4)
+        
+        #lineas verticales
+        pdf.line(30, 76 + pos_y_range, 30, 138.5 + pos_y_range)#OK
+        pdf.line(100, 76 + pos_y_range, 100, 138.5 + pos_y_range)
+        pdf.line(125, 76 + pos_y_range, 125, 143 + pos_y_range)
+        pdf.line(151, 79 + pos_y_range, 151, 143 + pos_y_range)
+        pdf.line(179, 79 + pos_y_range, 179, 151 + pos_y_range)
+
+        pdf.rect(11, 76 + pos_y_range, 196, 75)
+
+        pdf.text(12, 80.5 + pos_y_range, txt="CANTIDAD")
+        pdf.text(45, 80.5 + pos_y_range, txt="DESCRIPCIÓN",)
+        pdf.text(102, 80.5 + pos_y_range, txt="P UNIT.")
+        pdf.set_font("Arial", size=8)
+        pdf.text(145, 78.5 + pos_y_range, txt="   VALOR DE VENTA")
+        pdf.ln(2)
+        pdf.set_font("Arial", size=8)
+        pdf.text(127, 81.3 + pos_y_range, txt="EXENTAS")
+        pdf.text(158, 81.3 + pos_y_range,  txt="   5%")
+        pdf.text(190, 81.3 + pos_y_range, txt="   10%")
+
+        count = 0
+        y_position = 96
+        pdf.ln(4)
+        data["items"] = list(data["items"])
+        for item in data["items"]:
+            cantidad = item['cantidad'] if item['cantidad'] > 0 else '1'
+            pdf.text(20, 85+count + pos_y_range, txt=f"   {cantidad}")
+            pdf.text(32, 85+count + pos_y_range, txt=f"   {item['descripcion']}")
+            pdf.text(107, 85+count + pos_y_range, txt=thousandSeparator("{:>10,}".format(int(item['precio_unitario']))))
+            pdf.text(127, 85+count + pos_y_range, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
+            pdf.text(154, 85+count + pos_y_range, txt=f"   {item['total_5'] if item['total_5'] > 0 else ''}")
+            pdf.text(187, 85+count + pos_y_range, txt=f"   {thousandSeparator(item['total_10']) if item['total_10'] > 0 else ''}")
+            count += 3.4 
+            y_position += 3 
+        pdf.ln(6)
+        pdf.text(12, 142 + pos_y_range, txt="   SUBTOTALES")
+        pdf.text(110, 142 + pos_y_range, txt=f"{thousandSeparator(_total_exentas) if _total_exentas > 0 else ''}")
+        pdf.text(140, 142 + pos_y_range, txt=f"{thousandSeparator(_total_iva_5) if _total_iva_5 > 0 else ''}")
+        pdf.text(189, 142 + pos_y_range, txt=f"{thousandSeparator(_total_iva_10) if _total_iva_10 > 0 else ''}")
+        pdf.ln(4)
+        pdf.text(12, 146 + pos_y_range, txt=f"   TOTAL A PAGAR GUARANIES: {num2words(_total_general, lang='es')}")
+        pdf.set_font("Arial", size=12)
+        pdf.text(187, 148 + pos_y_range, txt=f"{thousandSeparator(_total_general)}")
+        pdf.ln(2)
+        pdf.set_font("Arial", size=8)
+        pdf.text(12, 150 + pos_y_range, txt=f"   LIQUIDACION DEL IVA (10%): {thousandSeparator(_iva_10)}                           (5%): {thousandSeparator(_iva_5)}                     TOTAL IVA: {thousandSeparator(_total_iva)}")
+        pdf.ln(4)
+        pos_y_range = 160.7
 
     pdf.output(dest="S").encode("latin1")
     pdf_bytes = pdf.output(dest="S").encode("latin1")
@@ -327,7 +278,7 @@ def process_with_gpt(file):
     
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{ "role": "system", "content": "Ordena el texto que recibiras de esta manera {'fecha': 'O1 Apr 2024 - 11:31', 'condicion': 'Efectivo', 'razon_social': 'FREDY RUMILDO', 'ruc': '4146518-0', 'direccion': '', 'telefono': '', 'items': [{'descripcion': 'TRAPO SECADO TWISTED GENERICO', 'cantidad': 1, 'precio_unitario': 35000, 'total_10': 0, 'total_5': 0, 'total_0': 35000}, {'descripcion': 'APLICADOR DE ESPUMA X2', 'cantidad': 1, 'precio_unitario': 15000, 'total_10': 0, 'total_5': 0, 'total_0': 15000}, {'descripcion': 'VONIXX LAVA AUTO 1.5L', 'cantidad': 1, 'precio_unitario': 30000, 'total_10': 0, 'total_5': 0, 'total_0': 30000}, {'descripcion': 'GUANTE LAVADO PREMIUN', 'cantidad': 1, 'precio_unitario': 30000, 'total_10': 0, 'total_5': 0, 'total_0': 30000}, {'descripcion': 'VONIXX PNEU PRETINHO 1.5L', 'cantidad': 1, 'precio_unitario': 40000, 'total_10': 0, 'total_5': 0, 'total_0': 40000}]}, debes podes ordenar el texto que recibiras en ese formato" },
+        messages=[{ "role": "system", "content": "Ordena el texto que recibiras de esta manera {'fecha': 'O1 Apr 2024 - 11:31', 'condicion': 'Efectivo', 'razon_social': 'FREDY RUMILDO', 'ruc': '4146518-0', 'direccion': '', 'telefono': '', 'items': [{'descripcion': 'TRAPO SECADO TWISTED GENERICO', 'cantidad': 1, 'precio_unitario': 35000, 'total_0': 0, 'total_5': 0, 'total_10': 35000}, {'descripcion': 'APLICADOR DE ESPUMA X2', 'cantidad': 1, 'precio_unitario': 15000, 'total_0': 0, 'total_5': 0, 'total_10': 15000}, {'descripcion': 'VONIXX LAVA AUTO 1.5L', 'cantidad': 1, 'precio_unitario': 30000, 'total_0': 0, 'total_5': 0, 'total_10': 30000}, {'descripcion': 'GUANTE LAVADO PREMIUN', 'cantidad': 1, 'precio_unitario': 30000, 'total_0': 0, 'total_5': 0, 'total_10': 30000}, {'descripcion': 'VONIXX PNEU PRETINHO 1.5L', 'cantidad': 1, 'precio_unitario': 40000, 'total_0': 0, 'total_5': 0, 'total_10': 40000}]}, debes podes ordenar el texto que recibiras en ese formato" },
                   {"role": "user", "content": texto_completo}
                  ]
     )
