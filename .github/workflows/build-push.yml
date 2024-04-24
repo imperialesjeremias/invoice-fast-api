@@ -13,15 +13,5 @@ jobs:
       run: docker build -t invoice-aratiri .
     - name: docker-compose up
       run: docker-compose up -d
-    - name: SSH into vps update project
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{secrets.HOST}}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSHKEY }}
-        script: |
-          cd /var/www/invoice-aratiri
-          git pull
-          docker-compose down
-          docker-compose up -d
+
     
