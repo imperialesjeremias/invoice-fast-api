@@ -14,9 +14,30 @@ import cv2
 import numpy as np
 import tempfile
 import re
+from openai import OpenAI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Obtener la variable de entorno API_URL
+opnai_key = os.getenv("OPENAI_KEY")
 
 
 app = FastAPI()
+origins = [
+    "http://localhost",
+    "http://localhost:3000", 
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
+
+client = OpenAI(api_key=opnai_key)
 
 app = FastAPI(
     title="Invoice Arartiri", 
@@ -28,7 +49,7 @@ app = FastAPI(
 
 )
 
-output_folder = "output"  # Asegúrate de que este directorio existe o crea uno dinámicamente
+output_folder = "output"
 
 
 def thousandSeparator(number):
@@ -46,39 +67,14 @@ async def get_invoice(file: UploadFile = File(...)):
     # Guardar el archivo en el sistema de archivos temporal
     with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
         shutil.copyfileobj(file.file, tmpfile)
-
+    print('tmpfile', file)
     # Obtener la ruta del archivo temporal
     tmpfile_path = tmpfile.name
 
     # Procesar el archivo PDF
-    data = process_pdf(tmpfile_path)
-    # print('datas', data)
-    # Eliminar el archivo temporal
+    data = process_with_gpt(tmpfile_path)
+    print(data)
     os.remove(tmpfile_path)
-
-    # Crear un PDF nuevo usando FPDF
-    #formato a4
-    # data = {
-    #     "fecha": "18-02-2024",
-    #     "condicion": "Contado",
-    #     "razon_social": "JomaTech Co",
-    #     "ruc": "5708247-2",
-    #     "direccion": "Cnel Toledo c/ Gral Bruguez",
-    #     "telefono": "0984266644",
-    #     "items": [
-    #         {
-    #             "descripcion": "Producto 1",
-    #             "cantidad": 2,
-    #             "precio_unitario": 100000,
-    #             "total_10": 200000, #10% si no hay enviar 0 pero enviar
-    #             "total_5": 0,#5% si no hay enviar 0 pero enviar
-    #             "total_0": 0 #exentas
-                
-    #         },
-    #     ],
-    # }
-  
-    
     _total_items = 0
     _total_iva_10 = 0
     _total_iva_5 = 0
@@ -104,14 +100,14 @@ async def get_invoice(file: UploadFile = File(...)):
     pdf.set_font("Arial", size=12)
     pdf.rect(11, 48, 190.2, 20) # pdf.rect(x, y, w, h)
     pdf.set_font("Arial", size=10)
-    pdf.cell(70, 85, txt="   Fecha: 18-02-2024", ln=0, align="L")
+    pdf.cell(70, 85, txt=f" Fecha: {data['fecha']}", ln=0, align="L")
     pdf.cell(70, 85, txt="   Condición: Contado   X  Crédito", ln=0, align="L")
     pdf.ln(4)
-    pdf.cell(70, 88, txt="   Razón Social: JomaTech Co", ln=0, align="L")
-    pdf.cell(70, 88, txt="   RUC: 5708247-2", ln=0, align="L")
+    pdf.cell(70, 88, txt=f"   Razón Social: {data['razon_social']}", ln=0, align="L")
+    pdf.cell(70, 88, txt=f"   RUC: {data['ruc']}", ln=0, align="L")
     pdf.ln(4)
-    pdf.cell(70, 91, txt="   Dirección: Cnel Toledo c/ Gral Bruguez", ln=0, align="L")
-    pdf.cell(70, 91, txt="   Teléfono: 0984266644", ln=0, align="L")
+    pdf.cell(70, 91, txt="   Dirección: -", ln=0, align="L")
+    pdf.cell(70, 91, txt="   Teléfono: -", ln=0, align="L")
     pdf.ln(6)
 
     #lineas horizontales 
@@ -170,14 +166,14 @@ async def get_invoice(file: UploadFile = File(...)):
     ## segunda factura 
     pdf.rect(11, 180, 190.2, 20)
     pdf.set_font("Arial", size=10)
-    pdf.text(12, 185, txt="   Fecha: 18-02-2024")
+    pdf.text(12, 185,  txt=f" Fecha: {data['fecha']}")
     pdf.text(90, 185, txt="   Condición: Contado   X  Crédito")
     pdf.ln(4)
-    pdf.text(12, 192, txt="   Razón Social: JomaTech Co")
-    pdf.text(90, 192, txt="   RUC: 5708247-2")
+    pdf.text(12, 192, txt=f"   Razón Social: {data['razon_social']}")
+    pdf.text(90, 192, txt=f"   RUC: {data['ruc']}")
     pdf.ln(4)
-    pdf.text(12, 198, txt="   Dirección: Cnel Toledo c/ Gral Bruguez")
-    pdf.text(90, 198, txt="   Teléfono: 0984266644")
+    pdf.text(12, 198, txt="   Dirección: -")
+    pdf.text(90, 198, txt="   Teléfono: -")
     pdf.ln(6)
 
     #lineas horizontales 
@@ -230,13 +226,12 @@ async def get_invoice(file: UploadFile = File(...)):
     pdf.text(12, 146+111.5, txt=f"   LIQUIDACION DEL IVA (10%): {thousandSeparator(_iva_10)}                           (5%): {thousandSeparator(_iva_5)}                     TOTAL IVA: {thousandSeparator(_total_iva)}")
     pdf.ln(4)
 
-    # Guardar el PDF generado en un archivo temporal
     pdf.output(dest="S").encode("latin1")
     pdf_bytes = pdf.output(dest="S").encode("latin1")
-    headers = {"Content-Disposition": 'attachment; filename="tuto1.pdf"'}
-    return StreamingResponse(
-        BytesIO(pdf_bytes), media_type="application/pdf", headers=headers
-    )  
+    headers = {"Content-Disposition": 'attachment; filename="plantilla-factura.pdf"'}
+    
+    # Devolver la respuesta como una StreamingResponse
+    return StreamingResponse(BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -260,8 +255,9 @@ async def upload_file(file: UploadFile = File(...)):
 
     return 'Procesado con éxito'
 
-
-
+@app.get("/hello")
+async def hello():
+    return {"message": "Hello World"}
 
 def convert_pdf_to_images(pdf_path, output_folder):
 
@@ -320,76 +316,94 @@ def preprocess(image):
 
     return img
 
-            
-def process_pdf(file):
+
+def process_with_gpt(file):
     pages = convert_from_path(file)
     texto_completo = ''
-    data = {
-        "fecha": "",
-        "condicion": "",
-        "razon_social": "",
-        "ruc": "",
-        "direccion": "",
-        "telefono": "",
-        "items": []
-    }
-
     for page in pages:
         image = preprocess(page)
         texto_pagina = pytesseract.image_to_string(image)
         texto_completo += texto_pagina + '\n\n'
-    nombres_productos = []
-
-    cabecera_match = re.search(r"Fecha de transaccién (.*?)Contacto (.*?)NIT del Contacto (.*?)Vendedor (.*?)Método de pago (.*?)\n", texto_completo, re.DOTALL)
-    if cabecera_match:
-        fecha_transaccion = cabecera_match.group(1).strip()
-        contacto = cabecera_match.group(2).strip()
-        nit_contacto = cabecera_match.group(3).strip()
-        vendedor = cabecera_match.group(4).strip()
-        metodo_pago = cabecera_match.group(5).strip()
-
-        data["fecha"] = fecha_transaccion
-        data["condicion"] = metodo_pago
-        data["razon_social"] = contacto
-        data["ruc"] = nit_contacto
-        
-    else:
-        print("Información de la cabecera no encontrada.")
-
-    # Extraer toda la información de productos
-    productos_info_match = re.search(r"Productos Cantidad Precio unitario Valor\n([\s\S]+?)(?=\nTotal:)", texto_completo)
-
-    if productos_info_match:
-        productos_info = productos_info_match.group(1).strip().split("\n")
-        productos = []
-        for producto_info in productos_info:
-            # Asumiendo el formato: [Nombre] [Cantidad] $[Precio unitario] $[Valor]
-            # Se ajusta para manejar mejor los espacios inesperados
-            match = re.match(r"(.*?)\s+(\d+)\s*\$\s*([\d,]+)\s*\$\s*([\d,]+)", producto_info)
-            if match:
-                descripcion = match.group(1)
-                cantidad = int(match.group(2))
-                precio_unitario = int(match.group(3).replace(",", "").replace("$", ""))
-                total = int(match.group(4).replace(",", "").replace("$", ""))
-                items = {
-                    "descripcion": descripcion,
-                    "cantidad": cantidad,
-                    "precio_unitario": precio_unitario,
-                    "total_10": precio_unitario,  # 10% si no hay enviar 0 pero enviar
-                    "total_5": 0,  # 5% si no hay enviar 0 pero enviar
-                    "total_0": 0  # exentas
-                }
-                productos.append(items)
-                
-        data["items"] = productos
-        # print('dataaa', data)
-        # Imprimir detalles de productos
-    else:
-        print("Información de productos no encontrada.")
     
-    return data
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{ "role": "system", "content": "Ordena el texto que recibiras de esta manera {'fecha': 'O1 Apr 2024 - 11:31', 'condicion': 'Efectivo', 'razon_social': 'FREDY RUMILDO', 'ruc': '4146518-0', 'direccion': '', 'telefono': '', 'items': [{'descripcion': 'TRAPO SECADO TWISTED GENERICO', 'cantidad': 1, 'precio_unitario': 35000, 'total_10': 0, 'total_5': 0, 'total_0': 35000}, {'descripcion': 'APLICADOR DE ESPUMA X2', 'cantidad': 1, 'precio_unitario': 15000, 'total_10': 0, 'total_5': 0, 'total_0': 15000}, {'descripcion': 'VONIXX LAVA AUTO 1.5L', 'cantidad': 1, 'precio_unitario': 30000, 'total_10': 0, 'total_5': 0, 'total_0': 30000}, {'descripcion': 'GUANTE LAVADO PREMIUN', 'cantidad': 1, 'precio_unitario': 30000, 'total_10': 0, 'total_5': 0, 'total_0': 30000}, {'descripcion': 'VONIXX PNEU PRETINHO 1.5L', 'cantidad': 1, 'precio_unitario': 40000, 'total_10': 0, 'total_5': 0, 'total_0': 40000}]}, debes podes ordenar el texto que recibiras en ese formato" },
+                  {"role": "user", "content": texto_completo}
+                 ]
+    )
+        
+    print(completion.choices[0].message.content)
+    return eval(completion.choices[0].message.content)
 
-def case_two(file):
+
+         
+# def process_pdf(file):
+#     pages = convert_from_path(file)
+#     texto_completo = ''
+#     data = {
+#         "fecha": "",
+#         "condicion": "",
+#         "razon_social": "",
+#         "ruc": "",
+#         "direccion": "",
+#         "telefono": "",
+#         "items": []
+#     }
+#     for page in pages:
+#         image = preprocess(page)
+#         texto_pagina = pytesseract.image_to_string(image)
+#         texto_completo += texto_pagina + '\n\n'
+#     nombres_productos = []
+
+#     cabecera_match = re.search(r"Fecha de transaccién (.*?)Contacto (.*?)NIT del Contacto (.*?)Vendedor (.*?)Método de pago (.*?)\n", texto_completo, re.DOTALL)
+#     if cabecera_match:
+#         fecha_transaccion = cabecera_match.group(1).strip()
+#         contacto = cabecera_match.group(2).strip()
+#         nit_contacto = cabecera_match.group(3).strip()
+#         vendedor = cabecera_match.group(4).strip()
+#         metodo_pago = cabecera_match.group(5).strip()
+
+#         data["fecha"] = fecha_transaccion
+#         data["condicion"] = metodo_pago
+#         data["razon_social"] = contacto
+#         data["ruc"] = nit_contacto
+        
+#     else:
+#         print("Información de la cabecera no encontrada.")
+
+#     # Extraer toda la información de productos
+#     productos_info_match = re.search(r"Productos Cantidad Precio unitario Valor\n([\s\S]+?)(?=\nTotal:)", texto_completo)
+
+#     if productos_info_match:
+#         productos_info = productos_info_match.group(1).strip().split("\n")
+#         productos = []
+#         for producto_info in productos_info:
+#             # Asumiendo el formato: [Nombre] [Cantidad] $[Precio unitario] $[Valor]
+#             # Se ajusta para manejar mejor los espacios inesperados
+#             match = re.match(r"(.*?)\s+(\d+)\s*\$\s*([\d,]+)\s*\$\s*([\d,]+)", producto_info)
+#             if match:
+#                 descripcion = match.group(1)
+#                 cantidad = int(match.group(2))
+#                 precio_unitario = int(match.group(3).replace(",", "").replace("$", ""))
+#                 total = int(match.group(4).replace(",", "").replace("$", ""))
+#                 items = {
+#                     "descripcion": descripcion,
+#                     "cantidad": cantidad,
+#                     "precio_unitario": precio_unitario,
+#                     "total_10": precio_unitario,  # 10% si no hay enviar 0 pero enviar
+#                     "total_5": 0,  # 5% si no hay enviar 0 pero enviar
+#                     "total_0": 0  # exentas
+#                 }
+#                 productos.append(items)
+                
+#         data["items"] = productos
+#         # Imprimir detalles de productos
+#     else:
+#         print("Información de productos no encontrada.")
+    
+#     return data
+
+# def case_two(file):
     pages = convert_from_path(file)
     texto_completo = ''
     data = {
