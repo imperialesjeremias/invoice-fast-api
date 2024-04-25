@@ -93,60 +93,61 @@ async def get_invoice(file: UploadFile = File(...)):
     _total_general = _total_iva_10 + _total_iva_5 + _total_exentas
 
 
-    pdf = FPDF(orientation='P', unit='mm', format='Legal')
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     #ocupar toda la pagina
     # pdf.image('output/page_1.jpg', x=1, y=1, w=216, h=356)
     pdf.set_font("Arial", size=12)
     pos_y_range = 0
+    post_x = 38.5
     for i in range(0, 2):
-        pdf.rect(11, 55 + pos_y_range, 196, 21) # pdf.rect(x, y, w, h)
+        pdf.rect(11, post_x + pos_y_range, 196, 21) # pdf.rect(x, y, w, h)
         pdf.set_font("Arial", size=10)
-        pdf.text(12, 60 + pos_y_range, txt=f"FECHA DE EMISIÓN: {data['fecha']}")
-        pdf.text(90, 60 + pos_y_range, txt="CONDICIÓN DE VENTA: CONTADO   (X)  Crédito ( )  DÍAS: ....")
+        pdf.text(12, 5 + post_x + pos_y_range, txt=f"FECHA DE EMISIÓN: {data['fecha']}")
+        pdf.text(90, 5 + post_x  + pos_y_range, txt="CONDICIÓN DE VENTA: CONTADO   (X)  Crédito ( )  DÍAS: ....")
         pdf.ln(4)
-        pdf.text(12, 65 + pos_y_range, txt=f"NOMBRE O RAZÓN SOCIAL: {data['razon_social']}")
-        pdf.text(150, 65 + pos_y_range, txt=f"RUC: {data['ruc']}")
+        pdf.text(12, 10 + post_x  + pos_y_range, txt=f"NOMBRE O RAZÓN SOCIAL: {data['razon_social']}")
+        pdf.text(150, 10 + post_x  + pos_y_range, txt=f"RUC: {data['ruc']}")
         pdf.ln(4)
-        pdf.text(12, 70 + pos_y_range, txt="DIRECCIÓN: -")
-        pdf.text(150, 70 + pos_y_range, txt="EMAIL: -")
+        pdf.text(12, 15 + post_x  + pos_y_range, txt="DIRECCIÓN: -")
+        pdf.text(150, 15 + post_x  + pos_y_range, txt="EMAIL: -")
         pdf.ln(4)
-        pdf.text(12, 75 + pos_y_range, txt="NOTA DE REMISIÓN NRO: -")
-        pdf.text(150, 75 + pos_y_range, txt="TELÉFONO: -")
+        pdf.text(12, 20 + post_x  + pos_y_range, txt="NOTA DE REMISIÓN NRO: -")
+        pdf.text(150, 20  + post_x  + pos_y_range, txt="TELÉFONO: -")
 
         #lineas horizontales 
-        pdf.line(11, 61.5 + pos_y_range, 207, 61.5 + pos_y_range)
-        pdf.line(11, 66.5 + pos_y_range, 207, 66.5 + pos_y_range)
-        pdf.line(11, 71.5 + pos_y_range, 207, 71.5 + pos_y_range)
+        pdf.line(11, 6.5 + post_x  + pos_y_range, 207, 6.5 + post_x  + pos_y_range)
+        pdf.line(11, 11.5 + post_x  + pos_y_range, 207, 11.5 + post_x  + pos_y_range)
+        pdf.line(11, 16.5 + post_x  + pos_y_range, 207, 16.5 + post_x  + pos_y_range)
 
 
-        pdf.line(11, 82 + pos_y_range, 207, 82 + pos_y_range)
-        pdf.line(125, 79 + pos_y_range, 207, 79 + pos_y_range)
+        pdf.line(11, 27 + post_x  + pos_y_range, 207, 27 + post_x  + pos_y_range)
+        pdf.line(125, 24 + post_x  + pos_y_range, 207, 24 + post_x  + pos_y_range)
 
-        pdf.line(11, 138.5 + pos_y_range, 207, 138.5 + pos_y_range)
-        pdf.line(11, 143 + pos_y_range, 207, 143 + pos_y_range)
-        pdf.line(11, 147 + pos_y_range, 179, 147 + pos_y_range)
+        pdf.line(11, 83.5 + post_x  + pos_y_range, 207, 83.5 + post_x  + pos_y_range)
+        pdf.line(11, 88 + post_x  + pos_y_range, 207, 88 + post_x  + pos_y_range)
+        pdf.line(11, 92 + post_x  + pos_y_range, 179, 92 + post_x  + pos_y_range)
 
         
         #lineas verticales
-        pdf.line(30, 76 + pos_y_range, 30, 138.5 + pos_y_range)#OK
-        pdf.line(100, 76 + pos_y_range, 100, 138.5 + pos_y_range)
-        pdf.line(125, 76 + pos_y_range, 125, 143 + pos_y_range)
-        pdf.line(151, 79 + pos_y_range, 151, 143 + pos_y_range)
-        pdf.line(179, 79 + pos_y_range, 179, 151 + pos_y_range)
+        pdf.line(30, 21 + post_x  + pos_y_range, 30, 83.5 + post_x  + pos_y_range)#OK
+        pdf.line(100, 21 + post_x  + pos_y_range, 100, 83.5 + post_x  + pos_y_range)
+        pdf.line(125, 21 + post_x  + pos_y_range, 125, 88 + post_x  + pos_y_range)
+        pdf.line(151, 24 + post_x  + pos_y_range, 151, 88 + post_x  + pos_y_range)
+        pdf.line(179, 24 + post_x  + pos_y_range, 179, 96 + post_x  + pos_y_range)
 
-        pdf.rect(11, 76 + pos_y_range, 196, 75)
+        pdf.rect(11, 21 + post_x  + pos_y_range, 196, 75)
 
-        pdf.text(12, 80.5 + pos_y_range, txt="CANTIDAD")
-        pdf.text(45, 80.5 + pos_y_range, txt="DESCRIPCIÓN",)
-        pdf.text(102, 80.5 + pos_y_range, txt="P UNIT.")
+        pdf.text(12, 25.5 + post_x  + pos_y_range, txt="CANTIDAD")
+        pdf.text(45, 25.5 + post_x  + pos_y_range, txt="DESCRIPCIÓN",)
+        pdf.text(102, 25.5 + post_x  + pos_y_range, txt="P UNIT.")
         pdf.set_font("Arial", size=8)
-        pdf.text(145, 78.5 + pos_y_range, txt="   VALOR DE VENTA")
+        pdf.text(145, 23.5 + post_x  + pos_y_range, txt="   VALOR DE VENTA")
         pdf.ln(2)
         pdf.set_font("Arial", size=8)
-        pdf.text(127, 81.3 + pos_y_range, txt="EXENTAS")
-        pdf.text(158, 81.3 + pos_y_range,  txt="   5%")
-        pdf.text(190, 81.3 + pos_y_range, txt="   10%")
+        pdf.text(127, 26.3 + post_x  + pos_y_range, txt="EXENTAS")
+        pdf.text(158, 26.3 + post_x  + pos_y_range,  txt="   5%")
+        pdf.text(190, 26.3 + post_x  + pos_y_range, txt="   10%")
 
         count = 0
         y_position = 96
@@ -154,28 +155,28 @@ async def get_invoice(file: UploadFile = File(...)):
         data["items"] = list(data["items"])
         for item in data["items"]:
             cantidad = item['cantidad'] if item['cantidad'] > 0 else '1'
-            pdf.text(20, 85+count + pos_y_range, txt=f"   {cantidad}")
-            pdf.text(32, 85+count + pos_y_range, txt=f"   {item['descripcion']}")
-            pdf.text(107, 85+count + pos_y_range, txt=thousandSeparator(item['precio_unitario']))
-            pdf.text(127, 85+count + pos_y_range, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
-            pdf.text(154, 85+count + pos_y_range, txt=f"   {item['total_5'] if item['total_5'] > 0 else ''}")
-            pdf.text(187, 85+count + pos_y_range, txt=f"   {thousandSeparator(item['total_10']) if item['total_10'] > 0 else ''}")
+            pdf.text(20, 30 + post_x +count + pos_y_range, txt=f"   {cantidad}")
+            pdf.text(32, 30 + post_x +count + pos_y_range, txt=f"   {item['descripcion']}")
+            pdf.text(107, 30 + post_x +count + pos_y_range, txt=thousandSeparator(item['precio_unitario']))
+            pdf.text(127, 30 + post_x +count + pos_y_range, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
+            pdf.text(154, 30 + post_x +count + pos_y_range, txt=f"   {item['total_5'] if item['total_5'] > 0 else ''}")
+            pdf.text(187, 30 + post_x +count + pos_y_range, txt=f"   {thousandSeparator(item['total_10']) if item['total_10'] > 0 else ''}")
             count += 3.4 
             y_position += 3 
         pdf.ln(6)
-        pdf.text(12, 142 + pos_y_range, txt="   SUBTOTALES")
-        pdf.text(110, 142 + pos_y_range, txt=f"{thousandSeparator(_total_exentas) if _total_exentas > 0 else ''}")
-        pdf.text(140, 142 + pos_y_range, txt=f"{thousandSeparator(_total_iva_5) if _total_iva_5 > 0 else ''}")
-        pdf.text(189, 142 + pos_y_range, txt=f"{thousandSeparator(_total_iva_10) if _total_iva_10 > 0 else ''}")
+        pdf.text(12, 87 + post_x + pos_y_range, txt="   SUBTOTALES")
+        pdf.text(110, 87 + post_x + pos_y_range, txt=f"{thousandSeparator(_total_exentas) if _total_exentas > 0 else ''}")
+        pdf.text(140, 87 + post_x + pos_y_range, txt=f"{thousandSeparator(_total_iva_5) if _total_iva_5 > 0 else ''}")
+        pdf.text(189, 87 + post_x + pos_y_range, txt=f"{thousandSeparator(_total_iva_10) if _total_iva_10 > 0 else ''}")
         pdf.ln(4)
-        pdf.text(12, 146 + pos_y_range, txt=f"   TOTAL A PAGAR GUARANIES: {num2words(_total_general, lang='es')}")
+        pdf.text(12, 91 + post_x + pos_y_range, txt=f"   TOTAL A PAGAR GUARANIES: {num2words(_total_general, lang='es')}")
         pdf.set_font("Arial", size=12)
-        pdf.text(187, 148 + pos_y_range, txt=f"{thousandSeparator(_total_general)}")
+        pdf.text(187, 93 + post_x + pos_y_range, txt=f"{thousandSeparator(_total_general)}")
         pdf.ln(2)
         pdf.set_font("Arial", size=8)
-        pdf.text(12, 150 + pos_y_range, txt=f"   LIQUIDACION DEL IVA (10%): {thousandSeparator(_iva_10)}                           (5%): {thousandSeparator(_iva_5)}                     TOTAL IVA: {thousandSeparator(_total_iva)}")
+        pdf.text(12, 95 + post_x + pos_y_range, txt=f"   LIQUIDACION DEL IVA (10%): {thousandSeparator(_iva_10)}                           (5%): {thousandSeparator(_iva_5)}                     TOTAL IVA: {thousandSeparator(_total_iva)}")
         pdf.ln(4)
-        pos_y_range = 160.7
+        pos_y_range = 148
 
     pdf.output(dest="S").encode("latin1")
     pdf_bytes = pdf.output(dest="S").encode("latin1")
