@@ -156,7 +156,7 @@ async def get_invoice(file: UploadFile = File(...)):
             cantidad = item['cantidad'] if item['cantidad'] > 0 else '1'
             pdf.text(20, 85+count + pos_y_range, txt=f"   {cantidad}")
             pdf.text(32, 85+count + pos_y_range, txt=f"   {item['descripcion']}")
-            pdf.text(107, 85+count + pos_y_range, txt=thousandSeparator("{:>10,}".format(int(item['precio_unitario']))))
+            pdf.text(107, 85+count + pos_y_range, txt=thousandSeparator(item['precio_unitario']))
             pdf.text(127, 85+count + pos_y_range, txt=f"   {item['total_0'] if item['total_0'] > 0 else ''}")
             pdf.text(154, 85+count + pos_y_range, txt=f"   {item['total_5'] if item['total_5'] > 0 else ''}")
             pdf.text(187, 85+count + pos_y_range, txt=f"   {thousandSeparator(item['total_10']) if item['total_10'] > 0 else ''}")
@@ -278,7 +278,7 @@ def process_with_gpt(file):
     
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{ "role": "system", "content": "Ordena el texto que recibiras de esta manera {'fecha': 'O1 Apr 2024 - 11:31', 'condicion': 'Efectivo', 'razon_social': 'FREDY RUMILDO', 'ruc': '4146518-0', 'direccion': '', 'telefono': '', 'items': [{'descripcion': 'TRAPO SECADO TWISTED GENERICO', 'cantidad': 1, 'precio_unitario': 35000, 'total_0': 0, 'total_5': 0, 'total_10': 35000}, {'descripcion': 'APLICADOR DE ESPUMA X2', 'cantidad': 1, 'precio_unitario': 15000, 'total_0': 0, 'total_5': 0, 'total_10': 15000}, {'descripcion': 'VONIXX LAVA AUTO 1.5L', 'cantidad': 1, 'precio_unitario': 30000, 'total_0': 0, 'total_5': 0, 'total_10': 30000}, {'descripcion': 'GUANTE LAVADO PREMIUN', 'cantidad': 1, 'precio_unitario': 30000, 'total_0': 0, 'total_5': 0, 'total_10': 30000}, {'descripcion': 'VONIXX PNEU PRETINHO 1.5L', 'cantidad': 1, 'precio_unitario': 40000, 'total_0': 0, 'total_5': 0, 'total_10': 40000}]}, debes podes ordenar el texto que recibiras en ese formato" },
+        messages=[{ "role": "system", "content": "Ordena el texto que recibiras de esta manera {'fecha': '01/01/2024', 'condicion': 'Efectivo', 'razon_social': 'FREDY RUMILDO', 'ruc': '4146518-0', 'direccion': '', 'telefono': '', 'items': [{'descripcion': 'TRAPO SECADO TWISTED GENERICO', 'cantidad': 1, 'precio_unitario': 35000, 'total_0': 0, 'total_5': 0, 'total_10': 35000}, {'descripcion': 'APLICADOR DE ESPUMA X2', 'cantidad': 1, 'precio_unitario': 15000, 'total_0': 0, 'total_5': 0, 'total_10': 15000}, {'descripcion': 'VONIXX LAVA AUTO 1.5L', 'cantidad': 1, 'precio_unitario': 30000, 'total_0': 0, 'total_5': 0, 'total_10': 30000}, {'descripcion': 'GUANTE LAVADO PREMIUN', 'cantidad': 1, 'precio_unitario': 30000, 'total_0': 0, 'total_5': 0, 'total_10': 30000}, {'descripcion': 'VONIXX PNEU PRETINHO 1.5L', 'cantidad': 1, 'precio_unitario': 40000, 'total_0': 0, 'total_5': 0, 'total_10': 40000}]}, debes podes ordenar el texto que recibiras en ese formato y formatea la fecha as DD/MM/YY" },
                   {"role": "user", "content": texto_completo}
                  ]
     )
@@ -288,71 +288,71 @@ def process_with_gpt(file):
 
 
          
-# def process_pdf(file):
-#     pages = convert_from_path(file)
-#     texto_completo = ''
-#     data = {
-#         "fecha": "",
-#         "condicion": "",
-#         "razon_social": "",
-#         "ruc": "",
-#         "direccion": "",
-#         "telefono": "",
-#         "items": []
-#     }
-#     for page in pages:
-#         image = preprocess(page)
-#         texto_pagina = pytesseract.image_to_string(image)
-#         texto_completo += texto_pagina + '\n\n'
-#     nombres_productos = []
+def process_pdf(file):
+    pages = convert_from_path(file)
+    texto_completo = ''
+    data = {
+        "fecha": "",
+        "condicion": "",
+        "razon_social": "",
+        "ruc": "",
+        "direccion": "",
+        "telefono": "",
+        "items": []
+    }
+    for page in pages:
+        image = preprocess(page)
+        texto_pagina = pytesseract.image_to_string(image)
+        texto_completo += texto_pagina + '\n\n'
+    nombres_productos = []
 
-#     cabecera_match = re.search(r"Fecha de transaccién (.*?)Contacto (.*?)NIT del Contacto (.*?)Vendedor (.*?)Método de pago (.*?)\n", texto_completo, re.DOTALL)
-#     if cabecera_match:
-#         fecha_transaccion = cabecera_match.group(1).strip()
-#         contacto = cabecera_match.group(2).strip()
-#         nit_contacto = cabecera_match.group(3).strip()
-#         vendedor = cabecera_match.group(4).strip()
-#         metodo_pago = cabecera_match.group(5).strip()
+    cabecera_match = re.search(r"Fecha de transaccién (.*?)Contacto (.*?)NIT del Contacto (.*?)Vendedor (.*?)Método de pago (.*?)\n", texto_completo, re.DOTALL)
+    if cabecera_match:
+        fecha_transaccion = cabecera_match.group(1).strip()
+        contacto = cabecera_match.group(2).strip()
+        nit_contacto = cabecera_match.group(3).strip()
+        vendedor = cabecera_match.group(4).strip()
+        metodo_pago = cabecera_match.group(5).strip()
 
-#         data["fecha"] = fecha_transaccion
-#         data["condicion"] = metodo_pago
-#         data["razon_social"] = contacto
-#         data["ruc"] = nit_contacto
+        data["fecha"] = fecha_transaccion
+        data["condicion"] = metodo_pago
+        data["razon_social"] = contacto
+        data["ruc"] = nit_contacto
         
-#     else:
-#         print("Información de la cabecera no encontrada.")
+    else:
+        print("Información de la cabecera no encontrada.")
 
-#     # Extraer toda la información de productos
-#     productos_info_match = re.search(r"Productos Cantidad Precio unitario Valor\n([\s\S]+?)(?=\nTotal:)", texto_completo)
+    # Extraer toda la información de productos
+    productos_info_match = re.search(r"Productos Cantidad Precio unitario Valor\n([\s\S]+?)(?=\nTotal:)", texto_completo)
 
-#     if productos_info_match:
-#         productos_info = productos_info_match.group(1).strip().split("\n")
-#         productos = []
-#         for producto_info in productos_info:
-#             # Asumiendo el formato: [Nombre] [Cantidad] $[Precio unitario] $[Valor]
-#             # Se ajusta para manejar mejor los espacios inesperados
-#             match = re.match(r"(.*?)\s+(\d+)\s*\$\s*([\d,]+)\s*\$\s*([\d,]+)", producto_info)
-#             if match:
-#                 descripcion = match.group(1)
-#                 cantidad = int(match.group(2))
-#                 precio_unitario = int(match.group(3).replace(",", "").replace("$", ""))
-#                 total = int(match.group(4).replace(",", "").replace("$", ""))
-#                 items = {
-#                     "descripcion": descripcion,
-#                     "cantidad": cantidad,
-#                     "precio_unitario": precio_unitario,
-#                     "total_10": precio_unitario,  # 10% si no hay enviar 0 pero enviar
-#                     "total_5": 0,  # 5% si no hay enviar 0 pero enviar
-#                     "total_0": 0  # exentas
-#                 }
-#                 productos.append(items)
+    if productos_info_match:
+        productos_info = productos_info_match.group(1).strip().split("\n")
+        productos = []
+        for producto_info in productos_info:
+            # Asumiendo el formato: [Nombre] [Cantidad] $[Precio unitario] $[Valor]
+            # Se ajusta para manejar mejor los espacios inesperados
+            match = re.match(r"(.*?)\s+(\d+)\s*\$\s*([\d,]+)\s*\$\s*([\d,]+)", producto_info)
+            if match:
+                descripcion = match.group(1)
+                cantidad = int(match.group(2))
+                precio_unitario = int(match.group(3).replace(",", "").replace("$", ""))
+                total = int(match.group(4).replace(",", "").replace("$", ""))
+                items = {
+                    "descripcion": descripcion,
+                    "cantidad": cantidad,
+                    "precio_unitario": precio_unitario,
+                    "total_10": precio_unitario,  # 10% si no hay enviar 0 pero enviar
+                    "total_5": 0,  # 5% si no hay enviar 0 pero enviar
+                    "total_0": 0  # exentas
+                }
+                productos.append(items)
                 
-#         data["items"] = productos
-#         # Imprimir detalles de productos
-#     else:
-#         print("Información de productos no encontrada.")
+        data["items"] = productos
+        # Imprimir detalles de productos
+    else:
+        print("Información de productos no encontrada.")
     
-#     return data
+    return data
 
 # def case_two(file):
     pages = convert_from_path(file)
